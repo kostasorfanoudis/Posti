@@ -7,8 +7,8 @@ import { UserModule } from 'src/user/user.module';
 
 @Module({
   imports: [
-    TypeOrmModule.forFeature([Post]),  // Add Post entity
-    UserModule,                        // Import UserModule here
+    TypeOrmModule.forFeature([Post]),  
+    UserModule,                        
   ],
   providers: [PostsService],
   controllers: [PostsController],

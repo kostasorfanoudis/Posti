@@ -4,10 +4,10 @@ import { Column, CreateDateColumn, Entity, PrimaryGeneratedColumn } from "typeor
 export class RefreshToken {
 
   @PrimaryGeneratedColumn()
-  id: number;  // Automatically generated primary key
+  id: number;  
 
   @Column()
-  userId: number; // Primary key column
+  userId: number; 
 
   @Column()
   token: string

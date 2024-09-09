@@ -15,13 +15,13 @@ import { RefreshToken } from './refresh_token/refresh_token.entity';
       host: 'localhost',
       port: 5432,
       username: 'postgres',
-      password: 'kostara1998', // Replace with your actual password
+      password: 'kostara1998', 
       database: 'posts',
-      entities: [Post, User,RefreshToken],  // Combine Post and User entities in a single array
+      entities: [Post, User,RefreshToken], 
       synchronize: true,
     }),
-    PostsModule, // Ensure PostsModule is correctly set up
-    UserModule,  // Ensure UserModule is correctly set up
+    PostsModule, 
+    UserModule,  
   ],
 })
 export class AppModule {}

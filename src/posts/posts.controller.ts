@@ -2,7 +2,7 @@ import { Controller, Get, Post, Body, Param, Delete, Put, Res,HttpStatus, Patch,
 import { PostsService } from './posts.service';
 import { Post  as PostEntity} from './post.entity';
 import { Response } from 'express';
-import { CreatePostDto } from 'src/create-post.dto';
+import { CreatePostDto } from 'src/dtos/create-post.dto';
 import { join } from 'path';
 import { UpdatePostDto } from 'src/dtos/updatePost.dto';
 import { AuthGuard } from 'src/guards/auth.guard';

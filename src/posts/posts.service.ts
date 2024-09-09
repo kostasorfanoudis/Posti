@@ -2,7 +2,7 @@ import { ForbiddenException, Injectable, NotFoundException } from '@nestjs/commo
 import { InjectRepository } from '@nestjs/typeorm';
 import { Repository } from 'typeorm';
 import { Post } from './post.entity';
-import { CreatePostDto } from 'src/create-post.dto';
+import { CreatePostDto } from 'src/dtos/create-post.dto';
 import { User } from 'src/user/user.entity';
 import { UpdatePostDto } from 'src/dtos/updatePost.dto';
 
@@ -44,41 +44,31 @@ export class PostsService {
   }
 
   async update(postId: number, username: string, updatePostDto: UpdatePostDto): Promise<Post> {
-    // Find the existing post by ID and include the user relationship
     const existingPost = await this.postsRepository.findOne({ where: { id: postId }, relations: ['user'] });
-  
-    // Check if the post exists
     if (!existingPost) {
       throw new NotFoundException(`Post with ID ${postId} not found.`);
     }
   
-    // Check if the user is the owner of the post
+    
     if (existingPost.user.username !== username) {
       throw new ForbiddenException(`User ${username} is not authorized to update this post.`);
     }
   
-    // Update the existing post with new values from the DTO
     existingPost.body = updatePostDto.body;
     existingPost.title = updatePostDto.title;
   
-    // Save the updated post and return it
+  
     return this.postsRepository.save(existingPost);
   }
   async remove(username: string, id: number): Promise<void> {
-    // Find the post by ID and include the user relationship
-    const post = await this.postsRepository.findOne({ where: { id }, relations: ['user'] });
     
-    // Check if the post exists
+    const post = await this.postsRepository.findOne({ where: { id }, relations: ['user'] });  
     if (!post) {
       throw new NotFoundException(`Post with ID ${id} not found.`);
     }
-  
-    // Check if the user is the owner of the post
     if (post.user.username !== username) {
       throw new ForbiddenException(`User ${username} is not authorized to delete this post.`);
     }
-  
-    // If the user is authorized, delete the post
     await this.postsRepository.delete(id);
   }
 
