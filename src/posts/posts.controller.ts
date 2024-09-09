@@ -1,10 +1,13 @@
-import { Controller, Get, Post, Body, Param, Delete, Put, Res,HttpStatus } from '@nestjs/common';
+import { Controller, Get, Post, Body, Param, Delete, Put, Res,HttpStatus, Patch, UseGuards } from '@nestjs/common';
 import { PostsService } from './posts.service';
-import { Post as PostEntity } from './post.entity';
+import { Post  as PostEntity} from './post.entity';
 import { Response } from 'express';
 import { CreatePostDto } from 'src/create-post.dto';
 import { join } from 'path';
+import { UpdatePostDto } from 'src/dtos/updatePost.dto';
+import { AuthGuard } from 'src/guards/auth.guard';
 
+@UseGuards(AuthGuard)
 @Controller('posts')
 export class PostsController {
   constructor(private readonly postsService: PostsService) {}
@@ -21,29 +24,41 @@ export class PostsController {
     return response.sendFile(filePath);
   }
 
-  @Get('data')
-  async getAllPostsData() {
-    return this.postsService.findAll();
+  @Get(':userId/data')
+  async getAllPostsData(@Param('userId') userId: number) {
+    return this.postsService.findAll(userId);
   }
  
 
-  @Post('create_post')
-  create(@Body() createPostDto: CreatePostDto) {
-  return this.postsService.create(createPostDto);
-}
-  @Get('new_post')
-  newPostsPage(@Res() response: Response) {
-    const filePath = join(__dirname, '..', '..', 'public', 'create-post.html');
-    return response.sendFile(filePath);
+  @Post(':username/create_post')
+  createPost(
+    @Param('username') username: string,
+    @Body() createPostDto: CreatePostDto,
+  ) {
+    return this.postsService.createPost(username, createPostDto);
+  }
+  
+  @Patch(':username/:postId')
+  async updatePost(
+    @Param('postId') postId: number,
+    @Body() updatePostDto: UpdatePostDto,
+    @Param('username') username: string ): Promise<PostEntity> {
+    return this.postsService.update(postId, username, updatePostDto);
   }
 
-  @Put(':id')
-  update(@Param('id') id: number, @Body() post: PostEntity) {
-    return this.postsService.update(+id, post);
+  @Delete(':username/:id')
+  remove(@Param('username') username: string,@Param('id') id: number) {
+    return this.postsService.remove(username,+id);
   }
 
-  @Delete(':id')
-  remove(@Param('id') id: number) {
-    return this.postsService.remove(+id);
+  @Get(':username')
+  async getUserPosts(@Param('username') username: string, @Res() res: Response) {
+    try {
+      const posts = await this.postsService.findPostsByUsername(username);
+      return res.status(200).json(posts);
+    } catch (error) {
+      console.error('Error fetching user posts:', error);
+      return res.status(500).json({ message: 'Failed to fetch user posts' });
+    }
   }
 }
