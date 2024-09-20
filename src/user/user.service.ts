@@ -30,8 +30,6 @@ export class UserService{
             throw new UnauthorizedException('Invalid credentials');
         }
         const token = await this.generateUserToken(user.id);
-        const refreshtoken = uuidv4();
-        console.log(refreshtoken);
         return  token;
         
     }
