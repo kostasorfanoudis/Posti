@@ -1,4 +1,4 @@
-import { Injectable, Res, UnauthorizedException } from "@nestjs/common";
+import { BadRequestException, Injectable, NotFoundException, Res, UnauthorizedException } from "@nestjs/common";
 import { LoginUserDto } from "src/dtos/loginUserDto.dto";
 import { User } from "./user.entity";
 import { InjectRepository } from "@nestjs/typeorm";
@@ -10,6 +10,11 @@ import { RefreshToken } from "src/refresh_token/refresh_token.entity";
 import { v4 as uuidv4 } from 'uuid';
 import { RefreshTokenDto } from "src/refresh_token/refresh_token.dto";
 import { MoreThanOrEqual } from "typeorm";
+import { nanoid } from "nanoid";
+import { ResetToken } from "src/reset-token/reset-token.entity";
+import { MailService } from "src/mail.service";
+import { Role } from "src/roles/schemas/role.entity";
+import { RolesService } from "src/roles/roles.service";
 
 
 
@@ -20,7 +25,14 @@ export class UserService{
         private usersRepository: Repository<User>,
         @InjectRepository(RefreshToken)
         private refreshTokenRepository: Repository<RefreshToken>,
-        private jwtService: JwtService
+        @InjectRepository(ResetToken)
+        private resetTokenRepository: Repository<ResetToken>,
+
+        @InjectRepository(Role)
+        private rolesRepository: Repository<Role>,
+        private jwtService: JwtService,
+        private mailService: MailService,
+        private rolesService: RolesService
     ) {}
 
     async login(loginUserDto: LoginUserDto) {
@@ -110,4 +122,89 @@ export class UserService{
         return this.usersRepository.findOne({ where: { username: username } });
     }
 
+    async changePassword(userId,oldPassword: string, newPassword: string){
+        const user = await this.usersRepository.findOne({ where: { id: userId } });
+        if(!user){
+            throw new NotFoundException("User not found !!!");
+        }
+        const passwordMatch = await bcrypt.compare(oldPassword,user.password);
+        if(!passwordMatch){
+            throw new UnauthorizedException("Worng credentials");
+        }
+
+        const newHashedPassword = await bcrypt.hash(newPassword,10);
+        user.password = newHashedPassword;
+        await this.usersRepository.save(user);
+    }
+
+    async forgotPassword(email: string){
+        const user = await this.usersRepository.findOne({ where: { email: email } });
+        if(!user){
+            throw new NotFoundException("User with this email not found !!!");
+        }
+        const expiryDate = new Date();
+        expiryDate.setHours(expiryDate.getHours() + 1);
+
+        const resetToken= nanoid(64);
+        await this.resetTokenRepository.save({
+            token: resetToken,
+            userId: user.id,
+            expiryDate: expiryDate
+        });
+        
+
+        this.mailService.sendPasswordResetEmail(email,resetToken);
+        
+        return{
+            message:"If this user exists, they will receive an email "
+        };
+    }
+
+    async resetPassword(newPassword: string, resetToken: string){
+        const token = await this.resetTokenRepository.findOne({where:{
+            token: resetToken,
+            expiryDate: MoreThanOrEqual( new Date())
+            }});
+        if(!token){
+            throw new UnauthorizedException("Reset token is invalid");
+        }
+        
+        const user = await this.usersRepository.findOneBy( {id: token.userId});
+        (await user).password = await bcrypt.hash(newPassword,10);
+        await this.usersRepository.save(user);
+        await this.resetTokenRepository.remove(token);
+    }
+
+    async changeRole(userId: number, roleId: number){
+        const user = await this.usersRepository.findOne({ where: { id: userId } });
+        if(!user){
+            throw new NotFoundException("User with this id not found !!!");
+        }
+        const role = await this.rolesRepository.findOne({ where: { id: roleId } });
+        if(!role){
+            throw new NotFoundException("Role with this id not found !!!");
+        }
+        console.log(userId);
+        console.log(roleId);
+        const newUser = this.usersRepository.create({
+            username: user.username,
+            email: user.email,
+            password: user.password,  // Hash password before saving
+            role: role,  // Assign the new role to the new user
+        });
+        await this.usersRepository.delete({id: userId});
+        await this.usersRepository.save(newUser);
+        
+    }
+
+    async getUserPermissions(userId: number){
+        const user = await this.usersRepository.findOne({where: {id: userId}});
+
+        if(!user){
+            throw new BadRequestException("User  with that id not found");
+        }
+        return user.role;
+
+        
+    }
 }

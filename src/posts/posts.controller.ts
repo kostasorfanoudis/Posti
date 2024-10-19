@@ -5,9 +5,9 @@ import { Response } from 'express';
 import { CreatePostDto } from 'src/dtos/create-post.dto';
 import { join } from 'path';
 import { UpdatePostDto } from 'src/dtos/updatePost.dto';
-import { AuthGuard } from 'src/guards/auth.guard';
+import { AuthenticationGuard } from 'src/guards/authentication.guard';
 
-@UseGuards(AuthGuard)
+@UseGuards(AuthenticationGuard)
 @Controller('posts')
 export class PostsController {
   constructor(private readonly postsService: PostsService) {}
@@ -29,7 +29,6 @@ export class PostsController {
     return this.postsService.findAll(userId);
   }
  
-
   @Post(':username/create_post')
   createPost(
     @Param('username') username: string,

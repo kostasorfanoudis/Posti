@@ -3,10 +3,13 @@ import { JwtService } from "@nestjs/jwt";
 import { Request } from "express";
 import { Observable } from "rxjs";
 @Injectable()
-export class AuthGuard implements CanActivate{
+export class AuthenticationGuard implements CanActivate{
 
     constructor(private jwtService: JwtService){}
     canActivate(context: ExecutionContext): boolean | Promise<boolean> | Observable<boolean> {
+
+        console.log("Inside authentication guard");
+        
         const request = context.switchToHttp().getRequest();
         const token = this.extractTokenFromHeader(request);
 

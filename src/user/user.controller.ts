@@ -1,10 +1,14 @@
-import { Body, Controller, Get, Param, Post, Res, HttpStatus, UseGuards } from "@nestjs/common";
+import { Body, Controller, Get, Param, Post, Res, HttpStatus, UseGuards, Put, Req, Patch } from "@nestjs/common";
 import { Response } from 'express';
 import { UserService } from "./user.service";
 import { join } from "path";
 import { LoginUserDto } from "src/dtos/loginUserDto.dto";
 import { SignupUserDto } from "src/dtos/signupUser.dto";
 import { RefreshTokenDto } from "src/refresh_token/refresh_token.dto";
+import { ChangePasswordDto } from "src/dtos/changePassword.dto";
+import { ForgotPasswordDto } from "src/dtos/forgot_password.dto";
+import { ResetPasswordDto } from "src/dtos/resetPassword.dto";
+import { AuthorizationGuard } from "src/guards/authorization.guard";
 
 @Controller('user')
 export class UserController {
@@ -70,5 +74,30 @@ export class UserController {
       console.error('Fetch all users error:', error);
       return res.status(HttpStatus.INTERNAL_SERVER_ERROR).json({ message: 'Failed to fetch users' });
     }
+  }
+  @UseGuards(AuthorizationGuard)
+  @Put('change_password')
+  async changePassword(@Body() changePasswordDto: ChangePasswordDto,@Req() req){
+    return this.userService.changePassword(req.userId,changePasswordDto.oldPassword,changePasswordDto.newPassword);
+  }
+
+  @Post('forgot_password')
+  async forgotPassword(@Body() forgotPasswordDto: ForgotPasswordDto){
+    return this.userService.forgotPassword(forgotPasswordDto.email);
+  }
+
+  @Put('reset_password')
+  async resetPassword(@Body() resetPasswordDto: ResetPasswordDto,@Req() req){
+    return this.userService.resetPassword(resetPasswordDto.newPassword,resetPasswordDto.resetToken);
+  }
+
+  @Put('change_role')
+  async changeRole(userId: number,roleId: number){
+    return this.userService.changeRole(userId, roleId);
+  }
+
+  @Get('user_permissions')
+  async getUserPermissions(userId: number){
+    return this.userService.getUserPermissions(userId);
   }
 }
